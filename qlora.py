@@ -4,19 +4,11 @@ import wandb
 import uuid
 import json
 import bitsandbytes as bnb
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, BitsAndBytesConfig, TrainerCallback
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, BitsAndBytesConfig, TrainerCallback, set_seed
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 from accelerate import Accelerator
 from datasets import load_dataset, DatasetDict, Dataset,load_from_disk
-
-## TODO
-# - change config to add eos/pad_token - how? to model? to gen. config?
-
-def read_json(file_path):
-    f = open(file_path)
-    data = json.load(f)
-    f.close()
-    return data
+from functools import partial
 
 def print_trainable_parameters(model):
     """
@@ -51,16 +43,18 @@ def find_all_linear_names(model):
 
 accelerator = Accelerator()
 
+set_seed(42)
+
 run_id = str(uuid.uuid4())
-bs=1        # batch size
-bs_eval=16        # batch size
-ga_steps=16  # gradient acc. steps
-epochs=40
-modelpath="models/phi-2"
-lr=0.00004
-max_length=2048
-dataset_name="synthetic_riddles_step-4_ACC.json"
-output_dir=f"out-{run_id}"
+modelpath="microsoft/phi-2"
+dataset_name="g-ronimo/riddles_evolved"
+lr=0.00002
+bs=1            # batch size
+bs_eval=16        # batch size for evals
+ga_steps=16     # gradient acc. steps
+epochs=20
+max_length=1024
+output_dir=f"out"
 
 lora_config = LoraConfig(
     r=32, 
@@ -101,13 +95,11 @@ model.config.eos_token_id = tokenizer.eos_token_id
 # Add adapters to model
 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
 model = get_peft_model(model, lora_config)
-model.gradient_checkpointing=True
 model.config.use_cache = False
 
 # Load dataset
-synthetic_riddles=read_json(dataset_name)
-dataset = Dataset.from_list(synthetic_riddles)
-dataset = dataset.train_test_split(test_size=0.1)
+dataset = load_dataset(dataset_name)
+dataset = dataset["train"].train_test_split(test_size=0.1)
 
 # Format (chatML) and tokenize dataset
 templates=[
@@ -116,7 +108,7 @@ templates=[
 ]
 IGNORE_INDEX=-100
 
-def tokenize(input):
+def tokenize(input, max_length):
     input_ids, attention_mask, labels = [], [], []
 
     for i,msg in enumerate(input["messages"]):
@@ -135,7 +127,7 @@ def tokenize(input):
     }
 
 dataset_tokenized = dataset.map(
-    tokenize, 
+    partial(tokenize, max_length=max_length), 
     batched=False, 
     num_proc=os.cpu_count()//accelerator.num_processes,    # multithreaded
     remove_columns=dataset["train"].column_names  # don't need this anymore, we have tokens from here on
@@ -163,8 +155,6 @@ def collate(elements):
         "attention_mask": torch.tensor( [e["attention_mask"] for e in elements] ),
     }
 
-    # breakpoint()
-
     return batch
 
 steps_per_epoch=len(dataset_tokenized["train"])//(accelerator.num_processes*bs*ga_steps)
@@ -175,8 +165,8 @@ args = TrainingArguments(
     per_device_eval_batch_size=bs_eval,
     evaluation_strategy="steps",
     logging_steps=1,
-    eval_steps=steps_per_epoch//2,
-    save_steps=steps_per_epoch,
+    eval_steps=steps_per_epoch//2,    # 2 evals per epoch
+    save_steps=steps_per_epoch,     # save once per epoch
     gradient_accumulation_steps=ga_steps,
     num_train_epochs=epochs,
     lr_scheduler_type="constant",
@@ -208,7 +198,6 @@ trainer = Trainer(
     eval_dataset=dataset_tokenized["test"],
 )
 
-# wandb.init(mode="disabled")
 if accelerator.is_main_process:
     run = wandb.init(
         project="phi2",
@@ -230,4 +219,3 @@ if accelerator.is_main_process:
     )
 
 trainer.train()
-
