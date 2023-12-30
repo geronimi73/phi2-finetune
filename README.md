@@ -35,7 +35,7 @@
 modelpath="microsoft/phi-2"
 dataset_name="g-ronimo/riddles_evolved"
 lr=0.00002		# low but works for this dataset
-bs=1		# batch size for training
+bs=1			# batch size for training
 bs_eval=16		# batch size for evals
 ga_steps=16		# gradient acc. steps
 epochs=20		# dataset is small, many epochs needed
