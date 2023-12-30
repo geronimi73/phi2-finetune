@@ -2,10 +2,10 @@
 
 ## Notebooks
 
-- nb_dataset.ipynb: Create a synthetic conversational dataset using a seed of riddles
-- nb_qlora.ipynb: Fine-tune Phi-2 using QLoRA 
+- `nb_dataset.ipynb`: Create a synthetic conversational dataset using a seed of riddles
+- `nb_qlora.ipynb`: Fine-tune Phi-2 using QLoRA 
 
-## qlora.py: Train on multiple GPUs with accelerate
+## `qlora.py`: Train on multiple GPUs with accelerate
 
 ### Overview
 
