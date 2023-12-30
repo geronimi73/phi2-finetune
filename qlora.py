@@ -29,18 +29,6 @@ def print_trainable_parameters(model):
     )
 
 
-def find_all_linear_names(model):
-    cls = bnb.nn.Linear4bit # if args.bits == 4 else (bnb.nn.Linear8bitLt if args.bits == 8 else torch.nn.Linear)
-    lora_module_names = set()
-    for name, module in model.named_modules():
-        if isinstance(module, cls):
-            names = name.split('.')
-            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
-
-    if 'lm_head' in lora_module_names: # needed for 16-bit
-        lora_module_names.remove('lm_head')
-    return list(lora_module_names)
-
 accelerator = Accelerator()
 
 set_seed(42)
@@ -59,8 +47,8 @@ output_dir=f"out"
 lora_config = LoraConfig(
     r=32, 
     lora_alpha=32, 
-    # target_modules=find_all_linear_names(model),
     target_modules = ['Wqkv','out_proj'],
+    # target_modules = ['fc1', 'fc2', 'Wqkv', 'out_proj'],
     lora_dropout=0.1, 
     bias="none", 
     modules_to_save = ["lm_head", "embed_tokens"],
@@ -96,6 +84,19 @@ model.config.eos_token_id = tokenizer.eos_token_id
 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
 model = get_peft_model(model, lora_config)
 model.config.use_cache = False
+
+# Print stats
+if accelerator.is_main_process:
+    print_trainable_parameters(model)
+    dtypes = {}
+    for _, p in model.named_parameters():
+        dtype = p.dtype
+        if dtype not in dtypes: dtypes[dtype] = 0
+        dtypes[dtype] += p.numel()
+    total = 0
+    for k, v in dtypes.items(): total+= v
+    for k, v in dtypes.items():
+        print(k, v, v/total)
 
 # Load dataset
 dataset = load_dataset(dataset_name)
@@ -176,18 +177,6 @@ args = TrainingArguments(
     bf16=True,        
     ddp_find_unused_parameters=False,
 )
-
-print_trainable_parameters(model)
-dtypes = {}
-for _, p in model.named_parameters():
-    dtype = p.dtype
-    if dtype not in dtypes: dtypes[dtype] = 0
-    dtypes[dtype] += p.numel()
-total = 0
-for k, v in dtypes.items(): total+= v
-for k, v in dtypes.items():
-    print(k, v, v/total)
-
 
 trainer = Trainer(
     model=model,
