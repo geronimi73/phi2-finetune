@@ -1,6 +1,9 @@
 # Fine-tune Phi-2
 
-Code for Medium story ["Fine-tune Microsoft’s Phi-2 with QLoRA and synthetic data"](https://medium.com/@geronimo7/phinetuning-2-0-28a2be6de110?sk=71f94a2d44b2a996da1febc04ca611e7)
+Code for Medium story ["Fine-tune Microsoft’s Phi-2 with QLoRA and synthetic data"](https://medium.com/@geronimo7/phinetuning-2-0-28a2be6de110?sk=71f94a2d44b2a996da1febc04ca611e7):
+
+- Create a synthetic dataset from a seed of instructions
+- Fine-tune Phi-2 using QLoRA
 
 ## Notebooks
 
