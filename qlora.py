@@ -40,7 +40,7 @@ lr=0.00002
 bs=1            # batch size
 bs_eval=16        # batch size for evals
 ga_steps=16     # gradient acc. steps
-epochs=4
+epochs=20
 max_length=1024
 output_dir=f"out"
 
