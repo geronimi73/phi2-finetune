@@ -9,9 +9,8 @@ Code for Medium story ["Fine-tune Microsoft’s Phi-2 with QLoRA and synthetic d
 
 - `nb_dataset.ipynb`: Create a synthetic conversational dataset using a seed of riddles
 - `nb_qlora.ipynb`: Fine-tune Phi-2 using QLoRA 
-- `nb_qlora_colab.ipynb`: Hacky version to enable gradient checkpointing, set of hyperparameters for low VRAM usage to run on a free Google Colab T4 instance 
 
-## `qlora.py`: Train on multiple GPUs with accelerate
+## `qlora.py`: Train on multiple GPUs with 🤗accelerate
 
 ### Overview
 
