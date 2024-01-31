@@ -155,7 +155,7 @@ trainer = Trainer(
 
 if accelerator.is_main_process:
     run = wandb.init(
-        project="phi2-update",
+        project="phi2",
         name=modelpath+"_"+dataset_name+f"_bs-{bs}_LR-{lr}_GPUs-{accelerator.num_processes}_maxlen-{max_length}_{run_id}",
         config={
             "model_name": modelpath,
