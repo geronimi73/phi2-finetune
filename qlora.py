@@ -45,7 +45,7 @@ tokenizer.add_special_tokens(dict(eos_token="<|im_end|>"))
 model.config.eos_token_id = tokenizer.eos_token_id
 
 # Add adapters to model
-model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False) 
+model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True) 
 
 lora_config = LoraConfig(
     r=32, 
