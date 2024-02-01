@@ -18,7 +18,7 @@ bs=1            # batch size
 bs_eval=16      # batch size for evals
 ga_steps=16     # gradient acc. steps
 epochs=20
-max_length=2048
+max_length=1024
 output_dir=f"out_{run_id}"
 
 # Load model
